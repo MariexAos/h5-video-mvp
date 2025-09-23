@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Video.js Custom Player</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0;
+            padding: 10px;
+            background: #f5f5f5;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            padding: 15px;
+        }
+        
+        .video-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* 视频播放器容器 */
+        .video-js {
+            width: 100% !important;
+            height: auto !important;
+            max-width: 100%;
+        }
+        
+        /* 移动端视频优化 */
+        @media (max-width: 480px) {
+            .video-js {
+                width: 100% !important;
+                height: auto !important;
+                max-height: 250px;
+            }
+        }
+        
+        .events-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .events-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .events-log {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .event-entry {
+            margin-bottom: 8px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border-left: 3px solid transparent;
+        }
+        
+        .event-start {
+            background: rgba(72, 187, 120, 0.1);
+            border-left-color: #48bb78;
+        }
+        
+        .event-timeupdate {
+            background: rgba(66, 153, 225, 0.1);
+            border-left-color: #4299e1;
+        }
+        
+        .event-ended {
+            background: rgba(245, 101, 101, 0.1);
+            border-left-color: #f56565;
+        }
+        
+        .event-seek {
+            background: rgba(237, 137, 54, 0.1);
+            border-left-color: #ed8936;
+        }
+        
+        .event-timestamp {
+            color: #a0aec0;
+            font-size: 11px;
+        }
+        
+        .controls-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e6fffa;
+            border-radius: 6px;
+            border-left: 4px solid #38b2ac;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .status-active {
+            background: #48bb78;
+        }
+        
+        .status-disabled {
+            background: #f56565;
+        }
+        
+        @media (max-width: 900px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                border-radius: 5px;
+            }
+            
+            .header {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .header p {
+                font-size: 13px;
+            }
+            
+            .content {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                padding: 10px;
+            }
+            
+            .events-section {
+                order: -1;
+            }
+            
+            .events-log {
+                height: 200px;
+            }
+            
+            .controls-info {
+                margin-top: 15px;
+                padding: 12px;
+                font-size: 13px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 2px;
+            }
+            
+            .container {
+                border-radius: 3px;
+                margin: 2px;
+            }
+            
+            .header {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 18px;
+            }
+            
+            .header p {
+                font-size: 12px;
+            }
+            
+            .content {
+                padding: 8px;
+                gap: 10px;
+            }
+            
+            .events-log {
+                height: 150px;
+                font-size: 11px;
+            }
+            
+            .controls-info {
+                padding: 10px;
+                font-size: 12px;
+            }
+            
+            .controls-info h3 {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📺 Video.js MVP 演示</h1>
+            <p>通过 Video.js API 控制播放器功能 - 禁用拖拽，启用倍速播放</p>
+        </div>
+
+        <div class="content">
+            <div class="video-section">
+                <video
+                    id="my-video"
+                    class="video-js vjs-big-play-centered"
+                    controls
+                    preload="auto"
+                    data-setup="{}"
+                    style="width: 100%; height: auto;"
+                >
+        <source src="https://vjs.zencdn.net/v/oceans.mp4" type="video/mp4" />
+        <p class="vjs-no-js">
+            To view this video please enable JavaScript, and consider upgrading to a
+            web browser that
+            <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+        </p>
+    </video>
+                
+                <div class="controls-info">
+                    <h3 style="margin: 0 0 10px 0;">🎛️ 控制状态</h3>
+                    <div><span class="status-indicator status-active"></span><strong>播放/暂停:</strong> 启用</div>
+                    <div><span class="status-indicator status-active"></span><strong>音量控制:</strong> 启用</div>
+                    <div><span class="status-indicator status-disabled"></span><strong>倍速播放:</strong> 禁用 (通过API)</div>
+                    <div><span class="status-indicator status-disabled"></span><strong>进度条拖拽:</strong> 禁用 (通过API)</div>
+                    <div><span class="status-indicator status-active"></span><strong>全屏模式:</strong> 启用</div>
+                </div>
+            </div>
+            
+            <div class="events-section">
+                <h3 class="events-title">
+                    📊 事件监控
+                    <button id="clearLog" style="margin-left: auto; padding: 4px 8px; border: none; background: #667eea; color: white; border-radius: 4px; cursor: pointer; font-size: 12px;">清空日志</button>
+                </h3>
+                <div id="events-log" class="events-log">
+                    <div class="event-entry">
+                        <span class="event-timestamp">[等待事件...]</span> 🎬 播放器初始化中...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script>
+        // === 事件日志系统 ===
+        const eventsLog = document.getElementById('events-log');
+        const clearLogBtn = document.getElementById('clearLog');
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function getCurrentTimestamp() {
+            return new Date().toLocaleTimeString();
+        }
+        
+        function addEventToLog(eventType, message, data = {}) {
+            const eventEntry = document.createElement('div');
+            eventEntry.className = `event-entry event-${eventType}`;
+            
+            const timestamp = getCurrentTimestamp();
+            const icon = {
+                'start': '▶️',
+                'timeupdate': '⏱️',
+                'ended': '⏹️',
+                'seek': '⏭️',
+                'pause': '⏸️',
+                'play': '▶️',
+                'volumechange': '🔊',
+                'fullscreenchange': '📺',
+                'ratechange': '⚡',
+                'loadstart': '📥',
+                'canplay': '✅',
+                'error': '❌',
+                'api': '🔧'
+            }[eventType] || '📡';
+            
+            let logMessage = `<span class="event-timestamp">[${timestamp}]</span> ${icon} ${message}`;
+            
+            if (Object.keys(data).length > 0) {
+                logMessage += `\n    ${JSON.stringify(data, null, 2)}`;
+            }
+            
+            eventEntry.innerHTML = logMessage;
+            eventsLog.appendChild(eventEntry);
+            
+            // 自动滚动到底部
+            eventsLog.scrollTop = eventsLog.scrollHeight;
+            
+            // 限制日志条数
+            const entries = eventsLog.querySelectorAll('.event-entry');
+            if (entries.length > 100) {
+                entries[0].remove();
+            }
+        }
+        
+        // 清空日志功能
+        clearLogBtn.addEventListener('click', () => {
+            eventsLog.innerHTML = '<div class="event-entry"><span class="event-timestamp">[' + getCurrentTimestamp() + ']</span> 🧹 日志已清空</div>';
+        });
+        
+        // === Video.js 播放器初始化 ===
+        addEventToLog('api', 'Video.js 播放器初始化开始...');
+        
+        // === 移动端检测功能 ===
+        function detectDevice() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            return {
+                isMobile: /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent),
+                isIOS: /ipad|iphone|ipod/.test(userAgent),
+                isAndroid: /android/.test(userAgent),
+                isIPad: /ipad/.test(userAgent),
+                isIPhone: /iphone/.test(userAgent),
+                isSafari: /safari/.test(userAgent) && !/chrome/.test(userAgent),
+                isChrome: /chrome/.test(userAgent),
+                isFirefox: /firefox/.test(userAgent),
+                supportsTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+                supportsFullscreen: !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled)
+            };
+        }
+        
+        const device = detectDevice();
+        addEventToLog('api', `设备检测完成`, device);
+        
+        // === Video.js 移动端兼容性配置 ===
+        const playerConfig = {
+            // === 基础配置 ===
+            playbackRates: false, // 禁用倍数播放
+            responsive: true,     // 启用响应式
+            fluid: true,         // 启用流体布局
+            aspectRatio: '16:9', // 设置宽高比
+            
+            // === 移动端特殊配置 ===
+            mobileUi: device.isMobile, // 移动端UI（自适应）
+            
+            // === 技术栈配置 ===
+            techOrder: ['html5'], // 优先使用HTML5 (移动端兼容性最好)
+            
+            // === HTML5技术配置 ===
+            html5: {
+                // 处理HLS/DASH流媒体
+                vhs: {
+                    // 是否覆盖原生播放器 (移动端建议保持原生)
+                    overrideNative: !device.isMobile,
+                    // 启用低延迟模式
+                    enableLowInitialPlaylist: device.isMobile,
+                    // 移动端网络优化
+                    experimentalBufferBasedABR: device.isMobile
+                },
+                
+                // 原生控制相关
+                nativeControlsForTouch: false, // 禁用原生触摸控制
+                nativeAudioTracks: false,      // 禁用原生音轨
+                nativeVideoTracks: false,      // 禁用原生视频轨
+                nativeTextTracks: false        // 禁用原生字幕
+            },
+            
+            // === 用户交互配置 ===
+            userActions: {
+                // 点击播放/暂停
+                click: !device.isMobile, // 移动端禁用点击（避免冲突）
+                // 双击全屏
+                doubleClick: !device.isMobile, // 移动端禁用双击
+                // 热键支持
+                hotkeys: !device.isMobile // 移动端禁用热键
+            },
+            
+            // === 播放器控制栏配置 ===
+            controlBar: {
+                // 控制栏组件配置
+                volumePanel: {
+                    inline: !device.isMobile // 移动端音量面板不内联
+                }
+            },
+            
+            // === 全屏配置 ===
+            fullscreen: {
+                options: {
+                    // iOS全屏配置
+                    navigationUI: device.isIOS ? 'hide' : 'auto'
+                }
+            },
+            
+            // === 性能优化配置 ===
+            preload: device.isMobile ? 'metadata' : 'auto', // 移动端仅预加载元数据
+            
+            // === 音频配置 ===
+            defaultVolume: device.isMobile ? 1.0 : 0.8 // 移动端默认满音量
+        };
+        
+        addEventToLog('api', `Video.js配置生成完成 (移动端: ${device.isMobile})`, {
+            mobileUi: playerConfig.mobileUi,
+            techOrder: playerConfig.techOrder,
+            preload: playerConfig.preload,
+            userActions: playerConfig.userActions
+        });
+        
+        const player = videojs('my-video', playerConfig);
+
+        // === 通过 Video.js API 禁用进度条拖拽和播放速率 ===
+        player.ready(() => {
+            addEventToLog('api', '播放器就绪，开始配置控制权限');
+            
+            // === 移动端特殊处理 ===
+            if (device.isMobile) {
+                addEventToLog('api', `开始移动端特殊配置 (${device.isIOS ? 'iOS' : device.isAndroid ? 'Android' : 'Mobile'})`);
+                
+                // iOS特殊处理
+                if (device.isIOS) {
+                    // 禁用iOS的Picture-in-Picture
+                    const videoElement = player.el().querySelector('video');
+                    if (videoElement) {
+                        videoElement.setAttribute('disablePictureInPicture', 'true');
+                        videoElement.setAttribute('playsinline', 'true'); // 内联播放
+                        addEventToLog('api', '✅ iOS: 已禁用PiP，启用内联播放');
+                    }
+                    
+                    // 处理iOS Safari的全屏行为
+                    player.on('fullscreenchange', () => {
+                        if (player.isFullscreen()) {
+                            // iOS全屏时的特殊处理
+                            setTimeout(() => {
+                                const fullscreenElement = document.fullscreenElement || 
+                                                        document.webkitFullscreenElement || 
+                                                        document.mozFullScreenElement;
+                                if (fullscreenElement) {
+                                    addEventToLog('api', '🍎 iOS全屏模式激活');
+                                }
+                            }, 100);
+                        }
+                    });
+                }
+                
+                // Android特殊处理
+                if (device.isAndroid) {
+                    // Android WebView兼容性处理
+                    const videoElement = player.el().querySelector('video');
+                    if (videoElement) {
+                        videoElement.setAttribute('webkit-playsinline', 'true');
+                        videoElement.setAttribute('playsinline', 'true');
+                        addEventToLog('api', '✅ Android: 已配置WebView兼容性');
+                    }
+                }
+                
+                // 移动端触摸优化
+                const playerElement = player.el();
+                if (playerElement) {
+                    // 禁用移动端的默认触摸行为
+                    playerElement.style.touchAction = 'manipulation';
+                    playerElement.style.webkitTouchCallout = 'none';
+                    playerElement.style.webkitUserSelect = 'none';
+                    
+                    addEventToLog('api', '✅ 移动端触摸优化已应用');
+                }
+                
+                // 移动端网络状态监听
+                if ('connection' in navigator) {
+                    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                    if (connection) {
+                        addEventToLog('api', `网络状态: ${connection.effectiveType || 'unknown'}, 下行: ${connection.downlink || 'unknown'}Mbps`);
+                        
+                        // 根据网络状况调整预加载策略
+                        if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+                            player.preload('none');
+                            addEventToLog('api', '⚠️ 检测到慢网络，禁用预加载');
+                        }
+                    }
+                }
+                
+                // 移动端电池状态监听（如果支持）
+                if ('getBattery' in navigator) {
+                    navigator.getBattery().then((battery) => {
+                        addEventToLog('api', `电池状态: ${Math.round(battery.level * 100)}%, 充电中: ${battery.charging}`);
+                        
+                        // 低电量模式优化
+                        if (battery.level < 0.2 && !battery.charging) {
+                            addEventToLog('api', '🔋 检测到低电量，应用省电模式');
+                            // 可以在这里添加省电优化
+                        }
+                    });
+                }
+            }
+            
+            // 禁用播放速率控制按钮
+            const playbackRateMenuButton = player.controlBar.playbackRateMenuButton;
+            if (playbackRateMenuButton) {
+                playbackRateMenuButton.hide();
+                playbackRateMenuButton.disable();
+                addEventToLog('api', '✅ 播放速率控制已通过 API 禁用');
+            }
+            
+            // 获取进度条控制组件
+            const progressControl = player.controlBar.progressControl;
+            
+            if (progressControl) {
+                // 方法1: 完全禁用进度条组件
+                progressControl.disable();
+                addEventToLog('api', '✅ 进度条组件已通过 API 禁用');
+                
+                // 方法2: 重写 handleMouseDown 方法来阻止拖拽
+                if (progressControl.progressHolder) {
+                    const originalHandleMouseDown = progressControl.progressHolder.handleMouseDown;
+                    progressControl.progressHolder.handleMouseDown = function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        addEventToLog('seek', '❌ 进度条拖拽被 API 阻止', {
+                            attemptedTime: 'N/A',
+                            currentTime: formatTime(player.currentTime())
+                        });
+                        return false;
+                    };
+                    
+                    // 同样处理触摸事件
+                    const originalHandleTouchStart = progressControl.progressHolder.handleTouchStart;
+                    if (originalHandleTouchStart) {
+                        progressControl.progressHolder.handleTouchStart = function(event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            addEventToLog('seek', '❌ 进度条触摸被 API 阻止');
+                            return false;
+                        };
+                    }
+                }
+                
+                // 方法3: 禁用点击跳转
+                if (progressControl.el()) {
+                    progressControl.el().style.pointerEvents = 'none';
+                    progressControl.el().style.cursor = 'not-allowed';
+                }
+                
+                addEventToLog('api', '🔒 所有进度条交互已禁用 (API + 事件处理)');
+            }
+            
+            // 锁定播放速率为1x，防止程序修改
+            const originalPlaybackRate = player.playbackRate;
+            player.playbackRate = function(rate) {
+                if (arguments.length === 0) {
+                    return 1; // 始终返回1x播放速率
+                }
+                // 阻止设置播放速率
+                if (rate !== 1) {
+                    addEventToLog('api', `❌ 播放速率修改被阻止: 尝试设置为 ${rate}x`, {
+                        requested: rate,
+                        current: 1,
+                        message: 'API已锁定播放速率为1x'
+                    });
+                    return this;
+                }
+                return originalPlaybackRate.call(this, rate);
+            };
+            
+            addEventToLog('api', '🔒 播放速率已锁定为 1x');
+            
+            // 监听全屏变化
+            player.on('fullscreenchange', () => {
+                const isFullscreen = player.isFullscreen();
+                addEventToLog('fullscreenchange', `全屏状态变化: ${isFullscreen ? '进入' : '退出'}全屏`, {
+                    isFullscreen: isFullscreen
+                });
+                
+                // 确保全屏模式下进度条仍然被禁用
+                if (isFullscreen && progressControl) {
+                    setTimeout(() => {
+                        progressControl.disable();
+                        if (progressControl.el()) {
+                            progressControl.el().style.pointerEvents = 'none';
+                        }
+                        addEventToLog('api', '🔒 全屏模式下重新禁用进度条');
+                    }, 100);
+                }
+            });
+        });
+
+        // === 事件监听和上报 ===
+        let hasStarted = false;
+        let lastReportedTime = -1;
+
+        function reportToServer(eventName, data) {
+            // 控制台输出
+            console.log(`[Event Reported] Event: ${eventName}`, data);
+            
+            // 模拟API调用
+            // fetch('/api/report', { 
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ event: eventName, data: data })
+            // });
+        }
+
+        // 播放开始事件
+        player.on('playing', () => {
+            if (!hasStarted) {
+                hasStarted = true;
+                const data = { 
+                    currentTime: player.currentTime(),
+                    duration: player.duration(),
+                    message: 'Playback has started.'
+                };
+                reportToServer('start', data);
+                addEventToLog('start', '视频开始播放', {
+                    currentTime: formatTime(data.currentTime),
+                    duration: formatTime(data.duration)
+                });
+            }
+        });
+
+        // 播放暂停事件
+        player.on('pause', () => {
+            const data = {
+                currentTime: player.currentTime(),
+                duration: player.duration()
+            };
+            addEventToLog('pause', '视频暂停', {
+                currentTime: formatTime(data.currentTime),
+                duration: formatTime(data.duration)
+            });
+        });
+
+        // 继续播放事件
+        player.on('play', () => {
+            if (hasStarted) { // 避免与 playing 事件重复
+                const data = {
+                    currentTime: player.currentTime(),
+                    duration: player.duration()
+                };
+                addEventToLog('play', '视频继续播放', {
+                    currentTime: formatTime(data.currentTime),
+                    duration: formatTime(data.duration)
+                });
+            }
+        });
+
+        // 时间更新事件 (节流处理)
+        player.on('timeupdate', () => {
+            const currentTime = Math.floor(player.currentTime());
+            const duration = player.duration();
+            
+            // 每隔5秒上报一次进度
+            if (currentTime > 0 && currentTime % 5 === 0 && currentTime !== lastReportedTime) {
+                lastReportedTime = currentTime;
+                const data = {
+                    currentTime: currentTime,
+                    duration: duration,
+                    progress: Math.round((currentTime / duration) * 100)
+                };
+                reportToServer('timeupdate', data);
+                addEventToLog('timeupdate', `播放进度更新 (${data.progress}%)`, {
+                    currentTime: formatTime(currentTime),
+                    duration: formatTime(duration),
+                    progress: `${data.progress}%`
+                });
+            }
+        });
+
+        // 播放结束事件
+        player.on('ended', () => {
+            const data = { 
+                message: 'Playback has finished.',
+                duration: player.duration()
+            };
+            reportToServer('ended', data);
+            addEventToLog('ended', '视频播放完成', {
+                duration: formatTime(data.duration)
+            });
+        });
+
+        // 音量变化事件
+        player.on('volumechange', () => {
+            const volume = Math.round(player.volume() * 100);
+            const muted = player.muted();
+            addEventToLog('volumechange', `音量变化: ${muted ? '静音' : volume + '%'}`, {
+                volume: volume,
+                muted: muted
+            });
+        });
+
+        // 播放速率变化事件
+        player.on('ratechange', () => {
+            const rate = player.playbackRate();
+            addEventToLog('ratechange', `播放速率变化: ${rate}x`, {
+                playbackRate: rate
+            });
+        });
+
+        // 加载开始事件
+        player.on('loadstart', () => {
+            addEventToLog('loadstart', '开始加载视频资源');
+        });
+
+        // 可以播放事件
+        player.on('canplay', () => {
+            addEventToLog('canplay', '视频资源加载完成，可以开始播放', {
+                duration: formatTime(player.duration() || 0)
+            });
+        });
+
+        // 错误事件
+        player.on('error', () => {
+            const error = player.error();
+            addEventToLog('error', '播放器发生错误', {
+                code: error?.code,
+                message: error?.message
+            });
+        });
+
+        // 尝试拖拽检测 (作为备用检测)
+        player.on('seeking', () => {
+            addEventToLog('seek', '⚠️  检测到 seeking 事件 (可能是程序触发)', {
+                currentTime: formatTime(player.currentTime()),
+                message: '这不应该通过拖拽触发'
+            });
+        });
+
+        // 初始化完成
+        addEventToLog('api', '✅ 所有事件监听器已设置完成');
+    </script>
+
+</body>
+</html>
